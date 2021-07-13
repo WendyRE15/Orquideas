@@ -1,5 +1,5 @@
 ---
-title: "Las orquideas repartidas en diferentes ASP de Costa Rica"
+title: "Orquideas Costa Rica"
 author: "Wendy Fonseca"
 date: "13/7/2021"
 output: html_document
@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Pasos previos
+
+Se cargaron los datos
 
 ```{r message=FALSE, warning=FALSE}
 library(sf)
@@ -62,6 +64,8 @@ colores_registros <-
 ```
 
 ## Mapa de Orquideas ubicadas en diferentes ASP
+
+Se muestra un mapa a partir de los datos cargados
 
 ```{r message=FALSE, warning=FALSE}
 leaflet() %>%
