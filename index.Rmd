@@ -1,0 +1,99 @@
+---
+title: "Las orquideas repartidas en diferentes ASP de Costa Rica"
+author: "Wendy Fonseca"
+date: "13/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Pasos previos
+
+```{r message=FALSE, warning=FALSE}
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(leaflet)
+library(plotly)
+library(DT)
+library(tidyr)
+
+orquideas <-
+  st_read(
+    "https://raw.githubusercontent.com/gf0604-procesamientodatosgeograficos/2021i-datos/main/gbif/orchidaceae-cr-registros.csv",
+    options = c(
+      "X_POSSIBLE_NAMES=decimalLongitude",
+      "Y_POSSIBLE_NAMES=decimalLatitude"
+    ),
+    quiet = TRUE
+  )
+
+aspcr <-
+  st_read(
+    "https://raw.githubusercontent.com/gf0604-procesamientodatosgeograficos/2021i-datos/main/sinac/asp/asp-wgs84.geojson",
+    quiet = TRUE
+  )
+
+st_crs(aspcr) = 4326
+st_crs(orquideas) = 4326
+
+orquideas$species[orquideas$species == ""] <- "N/A"
+
+orquideas <- orquideas %>%
+  filter(!is.na(coordinateUncertaintyInMeters) & coordinateUncertaintyInMeters <= 1000)%>%
+  filter(species!="N/A")
+
+aspcr <- aspcr %>%
+  filter(descripcio!="Area Marina de Manejo" & descripcio!="Area marina protegida")
+
+asp_registros <-
+  aspcr %>%
+  st_join(orquideas) %>%
+  group_by(nombre_asp) %>%
+  summarize(especies = n_distinct(species,na.rm = TRUE)) 
+
+colores_registros <-
+  colorNumeric(palette = "BuPu",
+               domain = asp_registros$especies,
+               na.color = "transparent")
+```
+
+## Mapa de Orquideas ubicadas en diferentes ASP
+
+```{r message=FALSE, warning=FALSE}
+leaflet() %>%
+  addTiles(group = "OSM") %>%
+  addPolygons(
+    data = asp_registros,
+    fillColor = ~colores_registros(asp_registros$especies),
+    fillOpacity = 0.7,
+    stroke = TRUE,
+    color = "black",
+    weight = 1,
+    popup = paste(
+      paste(
+        "<strong>ASP:</strong>",
+        asp_registros$nombre_asp
+      ),
+      paste(
+        "<strong>Cantidad de especies:</strong>",
+        asp_registros$especies
+        
+      ),
+      sep = '<br/>'
+    ),
+    group = "ASP - especies"
+  ) %>%
+  addLayersControl(baseGroups = c("OSM"),
+                   overlayGroups = c("ASP - especies")) %>%
+  addLegend(
+    position = "bottomleft",
+    pal = colores_registros,
+    values = asp_registros$especies,
+    group = "ASP - especies",
+    title = "Especies de orquideas")  
+```
+
